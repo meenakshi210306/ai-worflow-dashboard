@@ -8,13 +8,11 @@ import { useForm } from "react-hook-form";
 
 import { registerUser } from "../../lib/auth";
 import { registerSchema, type RegisterFormValues } from "../../lib/auth-schemas";
-import { useAuthStore } from "../../store/auth-store";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const setSession = useAuthStore((state) => state.setSession);
 
   const {
     register,
@@ -34,14 +32,8 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const response = await registerUser(values);
-
-      setSession({
-        token: response.token ?? response.data.token,
-        user: response.user ?? response.data.user
-      });
-
-      router.replace("/dashboard");
+      await registerUser(values);
+      router.replace("/login?registered=1");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to register");
     } finally {

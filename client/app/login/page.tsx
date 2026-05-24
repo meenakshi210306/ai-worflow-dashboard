@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
@@ -14,7 +14,17 @@ export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isRegistered, setIsRegistered] = useState(false);
   const setSession = useAuthStore((state) => state.setSession);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    setIsRegistered(params.get("registered") === "1");
+  }, []);
 
   const {
     register,
@@ -58,6 +68,12 @@ export default function LoginPage() {
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit(handleLogin)}>
+          {isRegistered ? (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              Account created successfully. Please login.
+            </div>
+          ) : null}
+
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700" htmlFor="email">
               Email
