@@ -1,5 +1,6 @@
 import { prisma } from "../config/prisma";
-import { ProjectStatus } from "@prisma/client";
+
+type ProjectStatus = "ACTIVE" | "ARCHIVED";
 
 export type CreateProjectInput = {
   userId: string;
