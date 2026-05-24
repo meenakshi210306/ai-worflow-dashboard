@@ -3,6 +3,10 @@
 A production-ready, full-stack AI Workflow Automation Dashboard built with **Next.js 15**, **Express**, **TypeScript**, **Prisma**, **PostgreSQL**, **JWT authentication**, and optional **OpenAI** integration.
 
 ---
+## 🚀 Live Demo
+
+**[https://ai-worflow-dashboard-client-qvpi-skzn3c806.vercel.app/login](https://ai-worflow-dashboard-client-qvpi-skzn3c806.vercel.app/login)**
+
 
 ## Table of Contents
 
