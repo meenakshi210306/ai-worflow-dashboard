@@ -24,6 +24,9 @@ export function NotificationsDrawer({
   onReadAll,
   onReadNotification
 }: NotificationsDrawerProps) {
+  const receivedCount = notifications.length;
+  const readCount = Math.max(receivedCount - unreadCount, 0);
+
   return (
     <AnimatePresence>
       {isOpen ? (
@@ -46,6 +49,9 @@ export function NotificationsDrawer({
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">Alerts</p>
                 <h2 className="mt-1 text-2xl font-semibold text-slate-950">Notifications</h2>
+                <p className="mt-2 text-sm text-slate-500">
+                  You have received {receivedCount} notification{receivedCount === 1 ? "" : "s"}.
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -68,8 +74,9 @@ export function NotificationsDrawer({
             </div>
 
             <div className="flex items-center justify-between px-6 py-4 text-sm text-slate-500">
+              <span>{receivedCount} received</span>
               <span>{unreadCount} unread</span>
-              <span>{notifications.length} total</span>
+              <span>{readCount} read</span>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 pb-6">
@@ -101,6 +108,17 @@ export function NotificationsDrawer({
                             <div>
                               <h3 className="font-semibold text-slate-950">{notification.title}</h3>
                               <p className="mt-1 text-sm leading-6 text-slate-600">{notification.message}</p>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                                  Received
+                                </span>
+                                <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${notification.isRead ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                                  {notification.isRead ? "Read" : "Unread"}
+                                </span>
+                                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                  {notification.type}
+                                </span>
+                              </div>
                             </div>
                             {!notification.isRead ? (
                               <button
