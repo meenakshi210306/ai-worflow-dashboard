@@ -1,8 +1,5 @@
 import { prisma } from "../config/prisma";
-import { $Enums } from "@prisma/client";
-
-const ProjectStatus = $Enums.ProjectStatus;
-type ProjectStatus = $Enums.ProjectStatus;
+import { ProjectStatus } from "@prisma/client";
 
 export type CreateProjectInput = {
   userId: string;
@@ -11,53 +8,38 @@ export type CreateProjectInput = {
 };
 
 export async function createProject(input: CreateProjectInput) {
-  const project = await prisma.project.create({
+  return prisma.project.create({
     data: {
       name: input.name,
       description: input.description || null,
       ownerId: input.userId,
-      status: ProjectStatus.ACTIVE
+      status: "ACTIVE"
     }
   });
-
-  return project;
 }
 
 export async function listUserProjects(userId: string) {
-  const projects = await prisma.project.findMany({
+  return prisma.project.findMany({
     where: { ownerId: userId },
     include: {
       tasks: true,
-      _count: {
-        select: { tasks: true }
-      }
+      _count: { select: { tasks: true } }
     },
     orderBy: { createdAt: "desc" }
   });
-
-  return projects;
 }
 
 export async function getProjectById(projectId: string, userId: string) {
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     include: {
-      tasks: {
-        include: {
-          assignee: true
-        }
-      },
+      tasks: { include: { assignee: true } },
       owner: true
     }
   });
 
-  if (!project) {
-    throw new Error("Project not found");
-  }
-
-  if (project.ownerId !== userId) {
-    throw new Error("Unauthorized");
-  }
+  if (!project) throw new Error("Project not found");
+  if (project.ownerId !== userId) throw new Error("Unauthorized");
 
   return project;
 }
@@ -67,38 +49,19 @@ export async function updateProject(
   userId: string,
   data: { name?: string; description?: string; status?: ProjectStatus }
 ) {
-  const project = await prisma.project.findUnique({
-    where: { id: projectId }
-  });
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
 
-  if (!project) {
-    throw new Error("Project not found");
-  }
+  if (!project) throw new Error("Project not found");
+  if (project.ownerId !== userId) throw new Error("Unauthorized");
 
-  if (project.ownerId !== userId) {
-    throw new Error("Unauthorized");
-  }
-
-  return prisma.project.update({
-    where: { id: projectId },
-    data
-  });
+  return prisma.project.update({ where: { id: projectId }, data });
 }
 
 export async function deleteProject(projectId: string, userId: string) {
-  const project = await prisma.project.findUnique({
-    where: { id: projectId }
-  });
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
 
-  if (!project) {
-    throw new Error("Project not found");
-  }
+  if (!project) throw new Error("Project not found");
+  if (project.ownerId !== userId) throw new Error("Unauthorized");
 
-  if (project.ownerId !== userId) {
-    throw new Error("Unauthorized");
-  }
-
-  return prisma.project.delete({
-    where: { id: projectId }
-  });
+  return prisma.project.delete({ where: { id: projectId } });
 }

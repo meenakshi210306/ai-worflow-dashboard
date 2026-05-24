@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
-import { Prisma, PrismaClient, $Enums } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { prisma } from "../config/prisma";
 import {
   generateRefreshToken,
@@ -11,7 +11,7 @@ import {
 } from "../utils/jwt";
 import { HttpError } from "../utils/http-error";
 
-type Role = $Enums.Role;
+type Role = "USER" | "ADMIN";
 
 export type PublicUser = {
   id: string;
@@ -47,9 +47,9 @@ const publicUserSelect = {
   role: true,
   createdAt: true,
   updatedAt: true
-} satisfies Prisma.UserSelect;
+};
 
-type DatabaseClient = PrismaClient | Prisma.TransactionClient;
+type DatabaseClient = any;
 
 async function createAuthSession(user: PublicUser, database: DatabaseClient): Promise<AuthSession> {
   const refreshToken = generateRefreshToken({
@@ -75,56 +75,40 @@ async function createAuthSession(user: PublicUser, database: DatabaseClient): Pr
 }
 
 export async function registerUser(input: RegisterInput): Promise<AuthSession> {
-  const existingUser = await prisma.user.findUnique({
-    where: { email: input.email }
-  });
+  const existingUser = await prisma.user.findUnique({ where: { email: input.email } });
 
-  if (existingUser) {
-    throw new HttpError(409, "Email is already registered");
-  }
+  if (existingUser) throw new HttpError(409, "Email is already registered");
 
   const password = await bcrypt.hash(input.password, 12);
   const email = input.email.toLowerCase();
 
-  return prisma.$transaction(async (database) => {
+  return prisma.$transaction(async (database: DatabaseClient) => {
     const user = await database.user.create({
-      data: {
-        name: input.name?.trim() || null,
-        email,
-        password
-      },
+      data: { name: input.name?.trim() || null, email, password },
       select: publicUserSelect
     });
-
     return createAuthSession(user, database);
   });
 }
 
 export async function loginUser(input: LoginInput): Promise<AuthSession> {
-  const user = await prisma.user.findUnique({
-    where: { email: input.email.toLowerCase() }
-  });
+  const user = await prisma.user.findUnique({ where: { email: input.email.toLowerCase() } });
 
-  if (!user) {
-    throw new HttpError(401, "Invalid email or password");
-  }
+  if (!user) throw new HttpError(401, "Invalid email or password");
 
   const passwordMatches = await bcrypt.compare(input.password, user.password);
-
-  if (!passwordMatches) {
-    throw new HttpError(401, "Invalid email or password");
-  }
+  if (!passwordMatches) throw new HttpError(401, "Invalid email or password");
 
   const publicUser: PublicUser = {
     id: user.id,
     name: user.name,
     email: user.email,
-    role: user.role,
+    role: user.role as Role,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt
   };
 
-  return prisma.$transaction(async (database) => {
+  return prisma.$transaction(async (database: DatabaseClient) => {
     return createAuthSession(publicUser, database);
   });
 }
@@ -132,9 +116,7 @@ export async function loginUser(input: LoginInput): Promise<AuthSession> {
 export async function refreshAuthSession(refreshToken: string): Promise<AuthSession> {
   const refreshPayload = verifyRefreshToken(refreshToken);
   const tokenHash = hashToken(refreshToken);
-  const refreshRecord = await prisma.refreshToken.findUnique({
-    where: { tokenHash }
-  });
+  const refreshRecord = await prisma.refreshToken.findUnique({ where: { tokenHash } });
 
   if (
     !refreshRecord ||
@@ -150,31 +132,22 @@ export async function refreshAuthSession(refreshToken: string): Promise<AuthSess
     select: publicUserSelect
   });
 
-  if (!user) {
-    throw new HttpError(404, "User not found");
-  }
+  if (!user) throw new HttpError(404, "User not found");
 
-  return prisma.$transaction(async (database) => {
+  return prisma.$transaction(async (database: DatabaseClient) => {
     await database.refreshToken.update({
       where: { tokenHash },
       data: { revokedAt: new Date() }
     });
-
-    return createAuthSession(user, database);
+    return createAuthSession(user as PublicUser, database);
   });
 }
 
 export async function revokeRefreshToken(refreshToken: string) {
   const tokenHash = hashToken(refreshToken);
-
   await prisma.refreshToken.updateMany({
-    where: {
-      tokenHash,
-      revokedAt: null
-    },
-    data: {
-      revokedAt: new Date()
-    }
+    where: { tokenHash, revokedAt: null },
+    data: { revokedAt: new Date() }
   });
 }
 
@@ -182,5 +155,5 @@ export async function getAuthenticatedUser(userId: string): Promise<PublicUser |
   return prisma.user.findUnique({
     where: { id: userId },
     select: publicUserSelect
-  });
+  }) as Promise<PublicUser | null>;
 }

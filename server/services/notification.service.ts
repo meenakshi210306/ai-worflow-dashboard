@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma";
 
 export type NotificationRecord = {
@@ -29,7 +28,7 @@ export async function createNotification(input: CreateNotificationInput) {
       title: input.title,
       message: input.message,
       actionUrl: input.actionUrl ?? null,
-      metadata: input.metadata as Prisma.InputJsonValue
+      metadata: (input.metadata ?? {}) as any
     }
   });
 }
@@ -46,10 +45,7 @@ export async function listNotifications(userId: string) {
     })
   ]);
 
-  return {
-    notifications,
-    unreadCount
-  };
+  return { notifications, unreadCount };
 }
 
 export async function markNotificationAsRead(userId: string, notificationId: string) {
@@ -57,9 +53,7 @@ export async function markNotificationAsRead(userId: string, notificationId: str
     where: { id: notificationId, userId }
   });
 
-  if (!notification) {
-    return null;
-  }
+  if (!notification) return null;
 
   return prisma.notification.update({
     where: { id: notificationId },

@@ -1,7 +1,6 @@
-import { $Enums } from "@prisma/client";
 import { prisma } from "../config/prisma";
 
-const TaskStatus = $Enums.TaskStatus;
+type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
 
 function getDayLabels(days: number) {
   return Array.from({ length: days }, (_, index) => {
@@ -16,10 +15,7 @@ function toDayKey(date: Date) {
 }
 
 function formatShortDate(date: Date) {
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric"
-  });
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 export async function getDashboardOverview(userId: string) {
@@ -29,39 +25,17 @@ export async function getDashboardOverview(userId: string) {
       orderBy: { updatedAt: "desc" },
       take: 6,
       include: {
-        _count: {
-          select: { tasks: true }
-        },
-        tasks: {
-          select: {
-            id: true,
-            status: true
-          }
-        }
+        _count: { select: { tasks: true } },
+        tasks: { select: { id: true, status: true } }
       }
     }),
     prisma.task.findMany({
-      where: {
-        project: {
-          ownerId: userId
-        }
-      },
+      where: { project: { ownerId: userId } },
       orderBy: { updatedAt: "desc" },
       take: 8,
       include: {
-        project: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
+        project: { select: { id: true, name: true } },
+        assignee: { select: { id: true, name: true, email: true } }
       }
     }),
     prisma.workflowSuggestion.findMany({
@@ -69,50 +43,29 @@ export async function getDashboardOverview(userId: string) {
       orderBy: { createdAt: "desc" },
       take: 5
     }),
-    prisma.notification.count({
-      where: { userId, isRead: false }
-    }),
+    prisma.notification.count({ where: { userId, isRead: false } }),
     prisma.activityLog.findMany({
-      where: {
-        OR: [{ userId }, { project: { ownerId: userId } }]
-      },
+      where: { OR: [{ userId }, { project: { ownerId: userId } }] },
       orderBy: { createdAt: "desc" },
       take: 8,
       include: {
-        project: {
-          select: { name: true }
-        },
-        task: {
-          select: { title: true }
-        }
+        project: { select: { name: true } },
+        task: { select: { title: true } }
       }
     })
   ]);
 
   const totalProjects = projects.length;
   const completedTasks = await prisma.task.count({
-    where: {
-      project: {
-        ownerId: userId
-      },
-      status: TaskStatus.DONE
-    }
+    where: { project: { ownerId: userId }, status: "DONE" }
   });
   const openTasks = await prisma.task.count({
-    where: {
-      project: {
-        ownerId: userId
-      },
-      status: {
-        not: TaskStatus.DONE
-      }
-    }
+    where: { project: { ownerId: userId }, status: { not: "DONE" } }
   });
 
-  const projectSummaries = projects.map((project) => {
+  const projectSummaries = projects.map((project: any) => {
     const taskCount = project._count.tasks || 0;
-    const completedCount = project.tasks.filter((task) => task.status === TaskStatus.DONE).length;
-
+    const completedCount = project.tasks.filter((task: any) => task.status === "DONE").length;
     return {
       id: project.id,
       name: project.name,
@@ -125,7 +78,7 @@ export async function getDashboardOverview(userId: string) {
     };
   });
 
-  const taskSummaries = tasks.map((task) => ({
+  const taskSummaries = tasks.map((task: any) => ({
     id: task.id,
     title: task.title,
     status: task.status,
@@ -136,7 +89,7 @@ export async function getDashboardOverview(userId: string) {
     updatedAt: task.updatedAt.toISOString()
   }));
 
-  const activitySummaries = activityLogs.map((entry) => ({
+  const activitySummaries = activityLogs.map((entry: any) => ({
     id: entry.id,
     action: entry.action,
     entityType: entry.entityType,
@@ -156,7 +109,7 @@ export async function getDashboardOverview(userId: string) {
     activityByDay.set(toDayKey(date), 0);
   });
 
-  suggestions.forEach((suggestion) => {
+  suggestions.forEach((suggestion: any) => {
     const key = toDayKey(suggestion.createdAt);
     if (suggestionCreatedByDay.has(key)) {
       suggestionCreatedByDay.set(key, (suggestionCreatedByDay.get(key) ?? 0) + 1);
@@ -164,15 +117,15 @@ export async function getDashboardOverview(userId: string) {
   });
 
   tasks
-    .filter((task) => task.status === TaskStatus.DONE)
-    .forEach((task) => {
+    .filter((task: any) => task.status === "DONE")
+    .forEach((task: any) => {
       const key = toDayKey(task.updatedAt);
       if (completedByDay.has(key)) {
         completedByDay.set(key, (completedByDay.get(key) ?? 0) + 1);
       }
     });
 
-  activityLogs.forEach((entry) => {
+  activityLogs.forEach((entry: any) => {
     const key = toDayKey(entry.createdAt);
     if (activityByDay.has(key)) {
       activityByDay.set(key, (activityByDay.get(key) ?? 0) + 1);
@@ -181,7 +134,6 @@ export async function getDashboardOverview(userId: string) {
 
   const trends = dateRange.map((date) => {
     const key = toDayKey(date);
-
     return {
       label: formatShortDate(date),
       workflows: suggestionCreatedByDay.get(key) ?? 0,
@@ -191,16 +143,10 @@ export async function getDashboardOverview(userId: string) {
   });
 
   return {
-    stats: {
-      totalProjects,
-      completedTasks,
-      openTasks,
-      aiSuggestions: suggestions.length,
-      unreadNotifications: notifications
-    },
+    stats: { totalProjects, completedTasks, openTasks, aiSuggestions: suggestions.length, unreadNotifications: notifications },
     projects: projectSummaries,
     tasks: taskSummaries,
-    recentSuggestions: suggestions.map((suggestion) => ({
+    recentSuggestions: suggestions.map((suggestion: any) => ({
       id: suggestion.id,
       prompt: suggestion.prompt,
       result: suggestion.result,
