@@ -12,9 +12,10 @@ type DashboardNavbarProps = {
   onMenuClick: () => void;
   onAlertsClick: () => void;
   unreadCount: number;
+  hasFreshAlert?: boolean;
 };
 
-export function DashboardNavbar({ onMenuClick, onAlertsClick, unreadCount }: DashboardNavbarProps) {
+export function DashboardNavbar({ onMenuClick, onAlertsClick, unreadCount, hasFreshAlert = false }: DashboardNavbarProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const clearSession = useAuthStore((state) => state.clearSession);
@@ -100,7 +101,11 @@ export function DashboardNavbar({ onMenuClick, onAlertsClick, unreadCount }: Das
         <button
           type="button"
           onClick={onAlertsClick}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
+          className={`inline-flex h-11 items-center justify-center gap-2 rounded-2xl border bg-white px-4 text-sm font-semibold transition hover:text-slate-950 ${
+            hasFreshAlert
+              ? "border-amber-300 text-amber-700 shadow-[0_0_0_3px_rgba(251,191,36,0.2)] animate-pulse"
+              : "border-slate-200 text-slate-700 hover:border-slate-300"
+          }`}
         >
           <span className="relative inline-flex items-center justify-center">
             <Bell className="h-4 w-4" />

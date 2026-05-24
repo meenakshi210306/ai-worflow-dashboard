@@ -6,7 +6,13 @@ import { fetchNotifications, markAllNotificationsRead, markNotificationRead } fr
 import { useAuthStore } from "../store/auth-store";
 import type { NotificationItem } from "../types/dashboard";
 
-export function useNotifications() {
+type UseNotificationsOptions = {
+  autoRefresh?: boolean;
+  refreshIntervalMs?: number;
+};
+
+export function useNotifications(options: UseNotificationsOptions = {}) {
+  const { autoRefresh = false, refreshIntervalMs = 15000 } = options;
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +43,20 @@ export function useNotifications() {
 
     void loadNotifications();
   }, [accessToken, isHydrated, loadNotifications]);
+
+  useEffect(() => {
+    if (!autoRefresh || !isHydrated || !accessToken) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      void loadNotifications();
+    }, refreshIntervalMs);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [accessToken, autoRefresh, isHydrated, loadNotifications, refreshIntervalMs]);
 
   const readNotification = useCallback(async (notificationId: string) => {
     await markNotificationRead(notificationId);
