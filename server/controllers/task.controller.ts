@@ -15,6 +15,7 @@ const createTaskSchema = z.object({
   title: z.string().trim().min(1).max(200),
   description: z.string().trim().max(1000).optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
+  status: z.enum(["TODO", "IN_PROGRESS", "DONE"]).optional(),
   dueDate: z.string().datetime().optional()
 });
 
@@ -41,6 +42,7 @@ export async function createTaskController(req: Request, res: Response) {
     title: parsedBody.title,
     description: parsedBody.description,
     priority: parsedBody.priority,
+    status: parsedBody.status,
     dueDate: parsedBody.dueDate ? new Date(parsedBody.dueDate) : undefined
   });
 

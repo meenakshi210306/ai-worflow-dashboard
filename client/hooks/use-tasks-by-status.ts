@@ -12,6 +12,7 @@ type UseTasksByStatusState = {
 };
 
 export function useTasksByStatus() {
+  const [refreshIndex, setRefreshIndex] = useState(0);
   const [state, setState] = useState<UseTasksByStatusState>({
     data: {
       TODO: [],
@@ -60,7 +61,10 @@ export function useTasksByStatus() {
     }
 
     loadTasks();
-  }, [isHydrated, accessToken]);
+  }, [isHydrated, accessToken, refreshIndex]);
 
-  return state;
+  return {
+    ...state,
+    refetch: () => setRefreshIndex((value) => value + 1)
+  };
 }

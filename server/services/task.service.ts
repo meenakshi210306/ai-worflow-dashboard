@@ -7,6 +7,7 @@ export type CreateTaskInput = {
   title: string;
   description?: string;
   priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  status?: "TODO" | "IN_PROGRESS" | "DONE";
   dueDate?: Date;
 };
 
@@ -18,6 +19,7 @@ export async function createTask(input: CreateTaskInput) {
       title: input.title,
       description: input.description || null,
       priority: input.priority || "MEDIUM",
+      status: input.status || "TODO",
       dueDate: input.dueDate || null,
       projectId: input.projectId,
       createdById: input.userId,

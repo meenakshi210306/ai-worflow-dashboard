@@ -12,6 +12,7 @@ type UseProjectTasksState = {
 };
 
 export function useProjectTasks(projectId: string) {
+  const [refreshIndex, setRefreshIndex] = useState(0);
   const [state, setState] = useState<UseProjectTasksState>({
     data: {
       TODO: [],
@@ -60,7 +61,10 @@ export function useProjectTasks(projectId: string) {
     }
 
     loadTasks();
-  }, [isHydrated, accessToken, projectId]);
+  }, [isHydrated, accessToken, projectId, refreshIndex]);
 
-  return state;
+  return {
+    ...state,
+    refetch: () => setRefreshIndex((value) => value + 1)
+  };
 }
