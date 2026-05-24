@@ -1,5 +1,7 @@
-import { TaskStatus } from "@prisma/client";
+import { $Enums } from "@prisma/client";
 import { prisma } from "../config/prisma";
+
+const TaskStatus = $Enums.TaskStatus;
 
 function getDayLabels(days: number) {
   return Array.from({ length: days }, (_, index) => {

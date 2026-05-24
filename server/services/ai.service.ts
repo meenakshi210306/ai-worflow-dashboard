@@ -24,7 +24,7 @@ export type GeneratedWorkflow = z.infer<typeof generatedWorkflowSchema>;
 export type WorkflowSuggestionRecord = {
   id: string;
   prompt: string;
-  result: Prisma.JsonValue;
+  result: unknown;
   createdAt: Date;
 };
 
@@ -177,7 +177,6 @@ async function requestOpenAIWorkflow(prompt: string, projectContext?: ProjectCon
 }
 
 export async function createWorkflowSuggestion(input: CreateWorkflowInput) {
-  // First, find or create the project
   const project = await prisma.$transaction(async (database) => {
     let foundProject = null;
 
@@ -188,7 +187,6 @@ export async function createWorkflowSuggestion(input: CreateWorkflowInput) {
     }
 
     if (!foundProject) {
-      // Use the user's most recently created project
       foundProject = await database.project.findFirst({
         where: { ownerId: input.userId },
         orderBy: { createdAt: "desc" }
@@ -208,28 +206,24 @@ export async function createWorkflowSuggestion(input: CreateWorkflowInput) {
     return foundProject;
   });
 
-  // Generate workflow with project context
   const projectContext: ProjectContext = {
     name: project.name,
     description: project.description
   };
   const workflow = await requestOpenAIWorkflow(input.prompt, projectContext);
-  const result = workflow as unknown as Prisma.InputJsonValue;
+  const result = workflow as unknown;
 
-  // Create suggestion and tasks in a transaction
   const suggestion = await prisma.$transaction(async (database) => {
-    // Create the workflow suggestion
     const createdSuggestion = await database.workflowSuggestion.create({
       data: {
         prompt: input.prompt,
-        result,
+        result: result as Prisma.InputJsonValue,
         userId: input.userId,
         projectId: project.id
       }
     });
 
-    // Create tasks from the workflow
-    const tasks = await Promise.all(
+    await Promise.all(
       workflow.tasks.map((task) =>
         database.task.create({
           data: {
@@ -244,7 +238,6 @@ export async function createWorkflowSuggestion(input: CreateWorkflowInput) {
       )
     );
 
-    // Create activity log
     await database.activityLog.create({
       data: {
         action: "workflow.generated",
@@ -255,13 +248,12 @@ export async function createWorkflowSuggestion(input: CreateWorkflowInput) {
           title: workflow.title,
           taskCount: workflow.tasks.length,
           projectName: project.name
-        } as Prisma.InputJsonValue,
+        } as unknown as Prisma.InputJsonValue,
         userId: input.userId,
         projectId: project.id
       }
     });
 
-    // Create notification
     await database.notification.create({
       data: {
         userId: input.userId,
@@ -273,7 +265,7 @@ export async function createWorkflowSuggestion(input: CreateWorkflowInput) {
           suggestionId: createdSuggestion.id,
           prompt: input.prompt,
           projectName: project.name
-        } as Prisma.InputJsonValue
+        } as unknown as Prisma.InputJsonValue
       }
     });
 

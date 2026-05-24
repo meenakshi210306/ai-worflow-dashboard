@@ -1,5 +1,8 @@
 import { prisma } from "../config/prisma";
-import { ProjectStatus } from "@prisma/client";
+import { $Enums } from "@prisma/client";
+
+const ProjectStatus = $Enums.ProjectStatus;
+type ProjectStatus = $Enums.ProjectStatus;
 
 export type CreateProjectInput = {
   userId: string;

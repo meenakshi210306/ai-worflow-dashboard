@@ -20,7 +20,7 @@ const publicUserSelect = {
   role: true,
   createdAt: true,
   updatedAt: true
-} satisfies Prisma.UserSelect;
+};
 
 type DatabaseClient = PrismaClient | Prisma.TransactionClient;
 

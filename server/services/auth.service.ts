@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
-import { Prisma, PrismaClient, Role } from "@prisma/client";
+import { Prisma, PrismaClient, $Enums } from "@prisma/client";
 import { prisma } from "../config/prisma";
 import {
   generateRefreshToken,
@@ -10,6 +10,8 @@ import {
   verifyRefreshToken
 } from "../utils/jwt";
 import { HttpError } from "../utils/http-error";
+
+type Role = $Enums.Role;
 
 export type PublicUser = {
   id: string;
