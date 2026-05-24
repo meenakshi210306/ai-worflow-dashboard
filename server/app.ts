@@ -20,7 +20,18 @@ export function createApp() {
   app.use(helmet());
   app.use(
     cors({
-      origin: env.CORS_ORIGIN.split(",").map((o) => o.trim()),
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const allowed = env.CORS_ORIGIN.split(",").map((o) => o.trim());
+        if (
+          allowed.some((o) => origin.startsWith(o)) ||
+          origin.endsWith(".vercel.app")
+        ) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      },
       credentials: true
     })
   );
