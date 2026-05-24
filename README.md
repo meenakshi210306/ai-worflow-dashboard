@@ -44,11 +44,13 @@ The AI Workflow Dashboard is a collaborative project management tool that helps 
 ## Features
 
 - ✅ **User Authentication** — Register, login, logout with JWT access tokens and HTTP-only refresh token cookies
+- ✅ **Auth UX** — Register flow redirects to login (no automatic dashboard login), then users sign in explicitly
 - ✅ **Project Management** — Create and manage multiple projects; click on any project to view its specific task board
 - ✅ **Task Board (Kanban)** — View tasks grouped by status: To Do, In Progress, Done — scoped per project
+- ✅ **Task Controls** — Move tasks between statuses, edit generated tasks, delete unwanted tasks, and add tasks manually
 - ✅ **AI Workflow Generator** — Generate a complete execution plan (tasks, priorities, owners, ETAs) from a natural language prompt; tasks are automatically assigned to the active project
 - ✅ **Global Search** — Search across projects, tasks, and workflows
-- ✅ **Notifications** — In-app notification drawer with unread badge count
+- ✅ **Notifications** — In-app alerts drawer, received/read visibility, and popup toast on newly received notifications
 - ✅ **User Settings** — Update profile details (name, email)
 - ✅ **Dark/Light Theme** — Theme toggle with persistent preference
 - ✅ **Hydration-safe** — `suppressHydrationWarning` on root layout for compatibility with browser extensions
@@ -80,7 +82,7 @@ The codebase is a **monorepo** with two independently deployable applications:
 
 ```
 client/   →   Next.js 15 frontend  (runs on :3000)
-server/   →   Express API backend  (runs on :4000)
+server/   →   Express API backend  (runs on :3001)
 ```
 
 The frontend communicates with the backend exclusively via REST API calls. Auth tokens are stored in `localStorage` (access token) and an HTTP-only cookie (refresh token). All protected API routes require a valid `Authorization: Bearer <token>` header.
@@ -117,7 +119,8 @@ ai-workflow-dashboard/
 │   │   ├── modals/
 │   │   │   ├── create-project-modal.tsx
 │   │   │   ├── workflow-generator-modal.tsx   # AI generator with project context
-│   │   │   └── notifications-drawer.tsx
+│   │   │   ├── notifications-drawer.tsx
+│   │   │   └── task-editor-modal.tsx          # Create/edit task modal
 │   │   ├── theme-provider.tsx
 │   │   └── toast-stack.tsx
 │   ├── hooks/
@@ -251,7 +254,7 @@ cp server/.env.example server/.env
 **Client** — Create `client/.env.local`:
 
 ```bash
-echo "NEXT_PUBLIC_API_URL=http://localhost:4000" > client/.env.local
+echo "NEXT_PUBLIC_API_URL=http://localhost:3001" > client/.env.local
 ```
 
 > **Important:** If Next.js starts on a port other than 3000 (e.g., 3002 because 3000 is in use), add that port to `CORS_ORIGIN` in `server/.env` and restart both servers.
@@ -286,7 +289,7 @@ npm run dev:server
 | Service | Default URL |
 |---|---|
 | Frontend (Next.js) | http://localhost:3000 |
-| Backend (Express) | http://localhost:4000 |
+| Backend (Express) | http://localhost:3001 |
 | PostgreSQL | localhost:5433 |
 
 ---
@@ -303,6 +306,8 @@ npm run dev:server
 
 Passwords are hashed with `bcryptjs`. Access tokens expire in 7 days by default. Refresh tokens are stored hashed in the database and rotated on each use.
 
+**Frontend behavior:** After successful registration, users are redirected to `/login` and shown a success message to sign in.
+
 ### Projects
 
 - **List:** `GET /api/projects` — returns all projects owned by the authenticated user
@@ -318,9 +323,11 @@ Passwords are hashed with `bcryptjs`. Access tokens expire in 7 days by default.
 - **All tasks:** `GET /api/tasks` — all tasks for the user's projects
 - **By status:** `GET /api/tasks/by-status/:status` — filtered by `TODO`, `IN_PROGRESS`, or `DONE`
 - **By project:** `GET /api/tasks/project/:projectId` — all tasks for a specific project (used by the project detail page)
-- **Create:** `POST /api/tasks` — requires `projectId`, `title`; optional `description`, `priority`, `dueDate`
+- **Create:** `POST /api/tasks` — requires `projectId`, `title`; optional `description`, `priority`, `status`, `dueDate`
 - **Update:** `PUT /api/tasks/:taskId` — update any field including status
 - **Delete:** `DELETE /api/tasks/:taskId`
+
+**Frontend behavior:** Both project and global task views support moving tasks by status, editing/deleting existing tasks, and creating tasks manually via modal.
 
 ### AI Workflow Generator
 
@@ -350,6 +357,8 @@ The workflow modal automatically reads the current project from the URL (if you'
 - **Mark read:** `PATCH /api/notifications/:id/read`
 - **Mark all read:** `PATCH /api/notifications/read-all`
 
+**Frontend behavior:** Alerts show received/unread/read counts and trigger popup toasts for newly received notifications.
+
 ### Settings
 
 - **Get profile:** `GET /api/settings/profile`
@@ -361,7 +370,7 @@ The workflow modal automatically reads the current project from the URL (if you'
 
 | Issue | Fix |
 |---|---|
-| Network error on login/register | Ensure `CORS_ORIGIN` in `server/.env` includes the port Next.js is running on (e.g., `:3002` if `:3000` was taken). Also ensure `client/.env.local` contains `NEXT_PUBLIC_API_URL=http://localhost:4000`. |
+| Network error on login/register | Ensure `CORS_ORIGIN` in `server/.env` includes the port Next.js is running on (e.g., `:3002` if `:3000` was taken). Also ensure `client/.env.local` contains `NEXT_PUBLIC_API_URL=http://localhost:3001`. |
 | Hydration mismatch warning | The root `<html>` and `<body>` tags use `suppressHydrationWarning={true}` to handle browser extensions that modify the DOM before React hydrates. |
 | Tasks going to wrong project | The AI generator modal reads the current URL's `projectId` param. Always open the generator from inside a project's detail page (`/dashboard/projects/:id`) to target that project. |
 | "Default Project" appearing | Fixed: the backend no longer auto-creates a "Default Project". It uses the user's most recently created project as the target when no `projectId` is specified. |
