@@ -1,7 +1,10 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { HttpError } from "../utils/http-error";
-import { changePassword, updateProfile } from "../services/settings.service";
+import {
+  changePassword,
+  updateProfile
+} from "../services/settings.service";
 
 const updateProfileSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -21,7 +24,10 @@ export async function updateProfileController(req: Request, res: Response) {
   }
 
   const parsedBody = updateProfileSchema.parse(req.body);
-  const user = await updateProfile(userId, parsedBody);
+  const user = await updateProfile(userId, {
+    name: parsedBody.name!,
+    email: parsedBody.email!
+  });
 
   res.status(200).json({
     success: true,
@@ -38,7 +44,10 @@ export async function changePasswordController(req: Request, res: Response) {
   }
 
   const parsedBody = changePasswordSchema.parse(req.body);
-  await changePassword(userId, parsedBody);
+  await changePassword(userId, {
+    currentPassword: parsedBody.currentPassword!,
+    newPassword: parsedBody.newPassword!
+  });
 
   res.status(200).json({
     success: true,

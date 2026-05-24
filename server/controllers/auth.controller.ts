@@ -58,14 +58,21 @@ function sendAuthSession(res: Response, statusCode: number, message: string, ses
 
 export async function registerController(req: Request, res: Response) {
   const parsedBody = registerSchema.parse(req.body);
-  const session = await registerUser(parsedBody);
+  const session = await registerUser({
+    name: parsedBody.name,
+    email: parsedBody.email!,
+    password: parsedBody.password!
+  });
 
   sendAuthSession(res, 201, "User registered successfully", session);
 }
 
 export async function loginController(req: Request, res: Response) {
   const parsedBody = loginSchema.parse(req.body);
-  const session = await loginUser(parsedBody);
+  const session = await loginUser({
+    email: parsedBody.email!,
+    password: parsedBody.password!
+  });
 
   sendAuthSession(res, 200, "Login successful", session);
 }
